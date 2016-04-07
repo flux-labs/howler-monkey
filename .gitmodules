@@ -1,0 +1,3 @@
+[submodule "backend/aquila"]
+	path = backend/aquila
+	url = git://github.com/zsiciarz/aquila.git

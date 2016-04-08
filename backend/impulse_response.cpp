@@ -3,22 +3,23 @@
 #include <time.h>
 #include <math.h>
 #include <vector>
+#include <string>
 #include <algorithm>
 #include <functional>
 #define SAMPLES_PER_SECOND 44100
 #define SPEED_OF_SOUND 340.29
 
 const int SECONDS_OF_IR = 6;
-const size_t SIZE = SAMPLES_PER_SECOND * SECONDS_OF_IR;
+const size_t SIZE = 16777216;
 const int MAX = 1020;
 const int HALF_MAX = MAX / 2;
 
-typedef struct Interaction {
-    float dist;
+typedef struct Interaction_ {
     int reflections;
+    float dist;
 } interaction;
 
-const double * create_impulse()
+const Aquila::SampleType *generate_impulse()
 {
     double envelope[SIZE] = {0};
 
@@ -26,7 +27,7 @@ const double * create_impulse()
         if (i <= HALF_MAX) envelope[i] = i * 50;
         else envelope[i] = (HALF_MAX - i) * 50;
     }
-    
+
     Aquila::WhiteNoiseGenerator generator(SAMPLES_PER_SECOND);
     generator.setAmplitude(2).generate(SIZE);
 
@@ -34,7 +35,9 @@ const double * create_impulse()
 
     generator *= env;
 
-    return generator.toArray();
+    static const Aquila::SampleType *impulse = generator.toArray();
+
+    return impulse;
 }
 
 void apply_reverb(
@@ -63,7 +66,7 @@ void apply_reverb(
         std::end(impulseSpectrum),
         std::begin(filterSpectrum),
         std::begin(resultSpectrum),
-        [] (Aquila::ComplexType x, Aquila::ComplexType y) { return x * y }
+        [] (Aquila::ComplexType x, Aquila::ComplexType y) { return x * y; }
     );
 
     double x1[SIZE];
@@ -75,10 +78,9 @@ void apply_reverb(
 }
 
 
-int create_impulse(const std::vector<interaction> & interactions, char fileName[])
+void create_impulse(std::vector<interaction> interactions, std::string fileName)
 {
-
-    const double * impulse = create_impulse();
+    const Aquila::SampleType *impulse = generate_impulse();
     double res[SIZE] = {0};
 
     auto fft = Aquila::FftFactory::getFft(SIZE);
@@ -93,7 +95,4 @@ int create_impulse(const std::vector<interaction> & interactions, char fileName[
     Aquila::WaveFileHandler wav(fileName);
 
     wav.save(with_reverb);
-
-    return 0;
 }
-

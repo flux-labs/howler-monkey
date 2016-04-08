@@ -22,7 +22,7 @@ void print_vector3 (float * vector, string name) {
   printf("\n");
 }
 
-#define NUMBER_OF_RAYS 1
+#define NUMBER_OF_RAYS 100
 #define MAXIMUM_REFLECTIONS 10
 
 #define crossProduct(a,b,c) \
@@ -169,6 +169,9 @@ void run_simulation(float *listener_position, string mesh) {
   const Json::Value vertices = parsed_mesh["vertices"];
   const Json::Value faces = parsed_mesh["faces"];
 
+  float ctr[3] = {0.75, 0.75, 0.75};
+  float r = 0.1f;
+
   float position[3] = {
     listener_position[0],
     listener_position[1],
@@ -183,12 +186,13 @@ void run_simulation(float *listener_position, string mesh) {
 
   for (int k = 0; k < NUMBER_OF_RAYS; k++) {
     int bounces = 0;
-
+    int seeking_sphere = false;
+    printf("running ray number: %i\n", k);
     direction[0] = (static_cast<float>(rand())/static_cast<float>(RAND_MAX)) * 2.0f - 1.0f;
     direction[1] = (static_cast<float>(rand())/static_cast<float>(RAND_MAX)) * 2.0f - 1.0f;
     direction[2] = (static_cast<float>(rand())/static_cast<float>(RAND_MAX)) * 2.0f - 1.0f;
 
-    while (bounces < MAXIMUM_REFLECTIONS) {
+    while (bounces < MAXIMUM_REFLECTIONS && not seeking_sphere) {
 
       for (unsigned int i=0; i < faces.size(); i++) {
         Json::Value face = faces[i];
@@ -213,13 +217,21 @@ void run_simulation(float *listener_position, string mesh) {
 
         float intersection[3] = {0, 0, 0};
 
+        float *intersects_sphere = rayIntersectSphere(position, direction, ctr, r);
+
+        if (intersects_sphere) {
+          cout << "intersected sphere!" << endl;
+          seeking_sphere = true;
+          break;
+        }
+
+        print_vector3(direction, "old_direction");
+        print_vector3(position, "old_position");
+
         int intersects = rayIntersectsTriangle(position, direction, v0, v1, v2, intersection);
 
         //reflect if intersection
         if (intersects) {
-          cout << "Intersects with face " << i
-          << endl;
-
           float new_direction[3] = {0, 0, 0};
 
           //figuring out normal
@@ -241,7 +253,14 @@ void run_simulation(float *listener_position, string mesh) {
           position[1] = intersection[1];
           position[2] = intersection[2];
 
+          print_vector3(direction, "new_direction");
+          print_vector3(position, "new_position");
+
           bounces++;
+        } else {
+          cout << "lost ray!" << endl;
+          seeking_sphere = true;
+          break;
         }
       }
 

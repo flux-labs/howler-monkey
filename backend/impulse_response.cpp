@@ -10,7 +10,7 @@
 #define SPEED_OF_SOUND 340.29
 
 const int SECONDS_OF_IR = 6;
-const size_t SIZE = SAMPLES_PER_SECOND * SECONDS_OF_IR;
+const size_t SIZE = 16777216;
 const int MAX = 1020;
 const int HALF_MAX = MAX / 2;
 
@@ -19,7 +19,7 @@ typedef struct Interaction_ {
     float dist;
 } interaction;
 
-const double * generate_impulse()
+const Aquila::SampleType *generate_impulse()
 {
     double envelope[SIZE] = {0};
 
@@ -35,7 +35,9 @@ const double * generate_impulse()
 
     generator *= env;
 
-    return generator.toArray();
+    static const Aquila::SampleType *impulse = generator.toArray();
+
+    return impulse;
 }
 
 void apply_reverb(
@@ -78,12 +80,10 @@ void apply_reverb(
 
 void create_impulse(std::vector<interaction> interactions, std::string fileName)
 {
-
-    const double * impulse = generate_impulse();
+    const Aquila::SampleType *impulse = generate_impulse();
     double res[SIZE] = {0};
 
     auto fft = Aquila::FftFactory::getFft(SIZE);
-    printf("%lf\n", impulse[0]);
     Aquila::SpectrumType impulseSpectrum = fft->fft(impulse);
 
     for (std::vector<interaction>::const_iterator i = interactions.begin(); i != interactions.end(); ++i) {

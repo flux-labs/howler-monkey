@@ -5,15 +5,34 @@
   <script>
     System.config({
       baseURL: '/scripts',
-      map: {
+      /*map: {
         '@cycle/core': 'node_modules/@cycle/core/dist/cycle.js',
         '@cycle/http': 'node_modules/@cycle/http/dist/cycle-http-driver.js',
         '@cycle/dom': 'node_modules/@cycle/dom/dist/cycle-dom.js'
-      }
+      }*/
     });
     System.import('main.js');
   </script>
 </head>
 <body>
-  <div id="app"></div>
+  <div id="app">
+    <div id="input-status">
+      <textarea id="obj-entry">
+        enter a mesh here
+      </textarea>
+      <div id="source-location">
+        source
+        <input class="x" type="text" placeholder="x"></input>
+        <input class="y" type="text" placeholder="y"></input>
+        <input class="z" type="text" placeholder="z"></input>
+      </div>
+      <div id="listener-location">
+        listener
+        <input class="x" type="text" placeholder="x"></input>
+        <input class="y" type="text" placeholder="y"></input>
+        <input class="z" type="text" placeholder="z"></input>
+      </div>
+      <button id="obj-submit">send obj</button>
+    </div>
+  </div>
 </body>

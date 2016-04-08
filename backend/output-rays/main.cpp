@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <string>
 #include "../../dist/include/jsoncpp/json.h"
 
@@ -253,7 +254,34 @@ void run_simulation(float *listener_position, string mesh) {
 }
 
 int main(int argc, char* argv[]) {
-  string mesh = argv[1];
+
+  std::ifstream inFile;
+  inFile.open(argv[1]);
+  std::stringstream strStream;
+  strStream << inFile.rdbuf();
+  string file = strStream.str();
+  // File is now a string that holds the file contents
+  // the client will send to the server json with the following shape
+  // {
+  //    obj: <the flux mesh description>,
+  //    points: {
+  //        source: {
+  //            x: <num>,
+  //            y: <num>,
+  //            z: <num>
+  //        },
+  //        listener: {
+  //            x: <num>,
+  //            y: <num>,
+  //            z: <num>
+  //        }
+  //    }
+  // }
+  //
+  // removed this..
+  // string mesh = argv[1];
+  
+  string outputFileName = argv[2];
 
   srand((unsigned)time(NULL));
 

@@ -2,12 +2,13 @@
 #define HOWLER_MONKEY__
 
 #include <vector>
+#include <string>
 
 typedef struct Interaction_ {
     int reflections;
     float dist;
 } interaction;
 
-void create_impulse(const std::vector<interaction> &interactions, char fileName[]);
+void create_impulse(std::vector<interaction> interactions, std::string fileName);
 
 #endif

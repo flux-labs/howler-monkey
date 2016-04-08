@@ -1,8 +1,10 @@
 #include "../dist/include/aquila/aquila.h"
+#include "howler-monkey.h"
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
 #include <vector>
+#include <string>
 #include <algorithm>
 #include <functional>
 #define SAMPLES_PER_SECOND 44100
@@ -13,11 +15,6 @@ const size_t SIZE = SAMPLES_PER_SECOND * SECONDS_OF_IR;
 const int MAX = 1020;
 const int HALF_MAX = MAX / 2;
 
-typedef struct Interaction {
-    float dist;
-    int reflections;
-} interaction;
-
 const double * create_impulse()
 {
     double envelope[SIZE] = {0};
@@ -26,7 +23,7 @@ const double * create_impulse()
         if (i <= HALF_MAX) envelope[i] = i * 50;
         else envelope[i] = (HALF_MAX - i) * 50;
     }
-    
+
     Aquila::WhiteNoiseGenerator generator(SAMPLES_PER_SECOND);
     generator.setAmplitude(2).generate(SIZE);
 
@@ -63,7 +60,7 @@ void apply_reverb(
         std::end(impulseSpectrum),
         std::begin(filterSpectrum),
         std::begin(resultSpectrum),
-        [] (Aquila::ComplexType x, Aquila::ComplexType y) { return x * y }
+        [] (Aquila::ComplexType x, Aquila::ComplexType y) { return x * y; }
     );
 
     double x1[SIZE];
@@ -75,7 +72,7 @@ void apply_reverb(
 }
 
 
-int create_impulse(const std::vector<interaction> & interactions, char fileName[])
+void create_impulse(const std::vector<interaction> interactions, std::string fileName)
 {
 
     const double * impulse = create_impulse();
@@ -93,7 +90,5 @@ int create_impulse(const std::vector<interaction> & interactions, char fileName[
     Aquila::WaveFileHandler wav(fileName);
 
     wav.save(with_reverb);
-
-    return 0;
 }
 

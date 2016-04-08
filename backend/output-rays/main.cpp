@@ -2,6 +2,7 @@
 #include <string>
 #include "../../dist/include/jsoncpp/json.h"
 #include <ctime>
+#include <cmath>
 #include <cstdlib>
 
 //JUST FOR DEBUGGING TAKE ME OUT PLEASE
@@ -23,6 +24,11 @@ using namespace std;
   (a)[0] = (b)[0] - (c)[0]; \
   (a)[1] = (b)[1] - (c)[1]; \
   (a)[2] = (b)[2] - (c)[2];
+
+#define translate(p1,p0,v,d) \
+  (p1)[0] = p0[0] + d*v[0]; \
+  (p1)[1] = p0[1] + d*v[1]; \
+  (p1)[2] = p0[2] + d*v[2];
 
 int rayIntersectsTriangle(float *p, float *d, float *v0, float *v1, float *v2) {
   float e1[3],e2[3],h[3],s[3],q[3];
@@ -51,6 +57,37 @@ int rayIntersectsTriangle(float *p, float *d, float *v0, float *v1, float *v2) {
   if (t > 0.00001) return true;
 
   else return false;
+}
+
+
+
+float * rayIntersectSphere(float *origin, float *dir, float *center, float radius) {
+
+  float l[3];
+  static float r[3];
+
+  vector(l, center, origin);
+
+  float tca = innerProduct(l, dir);
+
+  // no intersection
+  if (tca < 0) return 0;
+
+  float d2 = innerProduct(l, l) - tca * tca;
+
+  float d = sqrt(d2);
+
+  // no intersection
+  if (d > radius) return 0;
+
+  float thc = sqrt(radius*radius - d2);
+
+  float t0 = tca - thc;
+
+  translate(r,origin,dir,t0);
+
+  return r;
+
 }
 
 //parsing mesh
@@ -141,6 +178,29 @@ int main(int argc, char* argv[])
     << rayIntersectsTriangle(startingPosition, randomDirection, v0, v1, v2)
     << endl;
   }
+
+  stringstream ss (stringstream::in | stringstream::out);
+
+  float ctr[3] = {1,1,1};
+  float dir[3] = {0,0,1};
+  float p0[3] = {2,2,-8};
+  float r = 4.0f;
+  float *intersects = rayIntersectSphere(p0, dir, ctr, r);
+
+  string intersectStr;
+
+  if (intersects) {
+    for(unsigned int i=0; i<3; i++) {
+      ss << intersects[i];
+      ss << " ";
+    }
+    intersectStr = ss.str();
+  } else {
+    intersectStr = "None";
+  }
+
+  cout << "ray intersection with sphere " << intersectStr << "."
+  << endl;
 
   return 0;
 }

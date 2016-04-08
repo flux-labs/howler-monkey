@@ -51,12 +51,11 @@ int rayIntersectsTriangle(float *p, float *d, float *v0, float *v1, float *v2) {
   if (t > 0.00001) return true;
 
   else return false;
-
 }
 
 //parsing mesh
 //Mesh has to have no whitespace and escaped quotation marks
-void parse_mesh(string mesh) {
+Json::Value parse_mesh(string mesh) {
   Json::Value root;
   Json::Reader reader;
   bool parsedSuccess = reader.parse(mesh, root, false);
@@ -70,7 +69,7 @@ void parse_mesh(string mesh) {
   const Json::Value faces = root["faces"];
   const Json::Value vertices = root["vertices"];
 
-  for(unsigned int i=0; i < faces.size(); i++) {
+  for (unsigned int i=0; i < faces.size(); i++) {
       Json::Value face = faces[i];
       cout << "Face " << i << " in mesh: "
       << face[0].asString()
@@ -81,7 +80,7 @@ void parse_mesh(string mesh) {
       << endl;
   }
 
-  for(unsigned int i=0; i < vertices.size(); i++) {
+  for (unsigned int i=0; i < vertices.size(); i++) {
       Json::Value vertex = vertices[i];
       cout << "Vertex " << i << " in mesh: "
       << vertex[0].asString()
@@ -91,14 +90,22 @@ void parse_mesh(string mesh) {
       << vertex[2].asString()
       << endl;
   }
+
+  return root;
 }
 
 int main(int argc, char* argv[])
 {
   string mesh = argv[1];
-  parse_mesh(mesh);
+  Json::Value parsed_mesh = parse_mesh(mesh);
 
   srand(time(0));
+
+  float startingPosition[3] = {
+    0.0f,
+    0.0f,
+    0.0f
+  };
 
   float randomDirection[3] = {
     static_cast<float>(rand())/static_cast<float>(RAND_MAX),
@@ -106,14 +113,34 @@ int main(int argc, char* argv[])
     static_cast<float>(rand())/static_cast<float>(RAND_MAX)
   };
 
-  stringstream ss (stringstream::in | stringstream::out);
+  const Json::Value vertices = parsed_mesh["vertices"];
+  const Json::Value faces = parsed_mesh["faces"];
+  for (unsigned int i=0; i < faces.size(); i++) {
+    Json::Value face = faces[i];
 
-  ss << randomDirection[0];
-  string floats = ss.str();
+    float v0[3] = {
+      vertices[face[0].asUInt()][0].asFloat(),
+      vertices[face[0].asUInt()][1].asFloat(),
+      vertices[face[0].asUInt()][2].asFloat()
+    };
 
-  cout << "random direction: "
-  << floats
-  << endl;
+    float v1[3] = {
+      vertices[face[1].asUInt()][0].asFloat(),
+      vertices[face[1].asUInt()][1].asFloat(),
+      vertices[face[1].asUInt()][2].asFloat()
+    };
+
+    float v2[3] = {
+      vertices[face[2].asUInt()][0].asFloat(),
+      vertices[face[2].asUInt()][1].asFloat(),
+      vertices[face[2].asUInt()][2].asFloat()
+    };
+
+    cout << "Intersects with face " << i
+    << ": "
+    << rayIntersectsTriangle(startingPosition, randomDirection, v0, v1, v2)
+    << endl;
+  }
 
   return 0;
 }

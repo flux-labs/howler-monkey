@@ -25,6 +25,8 @@ function main() {
     }
   }
 
+  var context = new AudioContext();
+
   document.getElementById('obj-submit').addEventListener('click', function() {
     var obj = document.getElementById('obj-entry').value;
     if (!obj || ~obj.indexOf('enter a mesh here')) {
@@ -54,6 +56,29 @@ function main() {
     request.setRequestHeader("Content-type", "application/json");
     request.send(res);
   });
+
+
+  function handleResponse(wavUrl) {
+
+    navigator.webkitGetUserMedia({audio: true}, function(stream) {
+      var request = new XMLHttpRequest();
+      request.open('GET', wavUrl, true);
+      request.responseType = 'arraybuffer';
+
+      var convolver = context.createConvolver();
+
+      request.onload = function() {
+        var audioData = request.response;
+        context.decodeAudioData(audioData, function(buffer) {
+          convolver.buffer = buffer;
+          var input = context.createMediaStreamSource(stream);
+          input.connect(convolver);
+          convolver.connect(context.destination);
+        })
+      }
+    });
+
+  }
 }
 
 if (document.body) {

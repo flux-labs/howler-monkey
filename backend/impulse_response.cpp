@@ -37,7 +37,12 @@ const double * create_impulse()
     return generator.toArray();
 }
 
-void apply_reverb(double * res, const Aquila::SpectrumType & impulseSpectrum, std::vector<interaction>::iterator it, std::shared_ptr<Aquila::Fft> fft)
+void apply_reverb(
+        double * res,
+        const Aquila::SpectrumType & impulseSpectrum,
+        std::vector<interaction>::const_iterator it,
+        std::shared_ptr<Aquila::Fft> fft
+)
 {
     int travel_time_in_samples = (int)((float)(it->dist / SPEED_OF_SOUND) * SAMPLES_PER_SECOND);
     if (travel_time_in_samples > SIZE) {
@@ -70,7 +75,7 @@ void apply_reverb(double * res, const Aquila::SpectrumType & impulseSpectrum, st
 }
 
 
-int create_impulse(std::vector<interaction> interactions, char fileName[])
+int create_impulse(const std::vector<interaction> & interactions, char fileName[])
 {
 
     const double * impulse = create_impulse();
@@ -79,7 +84,7 @@ int create_impulse(std::vector<interaction> interactions, char fileName[])
     auto fft = Aquila::FftFactory::getFft(SIZE);
     Aquila::SpectrumType impulseSpectrum = fft->fft(impulse);
 
-    for (std::vector<interaction>::iterator i = interactions.begin(); i != interactions.end(); i++) {
+    for (std::vector<interaction>::const_iterator i = interactions.begin(); i != interactions.end(); ++i) {
         apply_reverb(res, impulseSpectrum, i, fft);
     }
 

@@ -46,11 +46,11 @@ void print_vector3 (float * vector, string name) {
   (p1)[2] = p0[2] + d*v[2];
 
 void reflect_ray(float *direction, float *normal, float *new_direction) {
-  float direction_dot_normal = innerProduct(direction, normal);
+  float direction_dot_normal = innerProduct(normal, direction);
 
-  new_direction[0] = 2 * (direction_dot_normal * normal[0]) - 1;
-  new_direction[1] = 2 * (direction_dot_normal * normal[1]) - 1;
-  new_direction[2] = 2 * (direction_dot_normal * normal[2]) - 1;
+  new_direction[0] = direction[0] - 2 * (direction_dot_normal * normal[0]);
+  new_direction[1] = direction[1] - 2 * (direction_dot_normal * normal[1]);
+  new_direction[2] = direction[2] - 2 * (direction_dot_normal * normal[2]);
 }
 
 float vector_length(float *vector) {
@@ -64,7 +64,7 @@ void normalize_vector(float *vector) {
   vector[2] /= length;
 }
 
-int rayIntersectsTriangle(float *p, float *d, float *v0, float *v1, float *v2) {
+int rayIntersectsTriangle(float *p, float *d, float *v0, float *v1, float *v2, float *intersection) {
   float e1[3],e2[3],h[3],s[3],q[3];
   float a,f,u,v,t;
   vector(e1,v1,v0);
@@ -88,7 +88,10 @@ int rayIntersectsTriangle(float *p, float *d, float *v0, float *v1, float *v2) {
 
   t = f * innerProduct(e2,q);
 
-  if (t > 0.00001) return true;
+  if (t > 0.00001) {
+    translate(intersection, p, d, t);
+    return true;
+  }
 
   else return false;
 }
@@ -164,8 +167,6 @@ void run_simulation(float *listener_position, string mesh) {
     direction[1] = (static_cast<float>(rand())/static_cast<float>(RAND_MAX)) * 2.0f - 1.0f;
     direction[2] = (static_cast<float>(rand())/static_cast<float>(RAND_MAX)) * 2.0f - 1.0f;
 
-
-
     while (bounces < MAXIMUM_REFLECTIONS) {
 
       for (unsigned int i=0; i < faces.size(); i++) {
@@ -189,7 +190,9 @@ void run_simulation(float *listener_position, string mesh) {
           vertices[face[2].asUInt()][2].asFloat()
         };
 
-        int intersects = rayIntersectsTriangle(position, direction, v0, v1, v2);
+        float intersection[3] = {0, 0, 0};
+
+        int intersects = rayIntersectsTriangle(position, direction, v0, v1, v2, intersection);
 
         //reflect if intersection
         if (intersects) {
@@ -213,6 +216,10 @@ void run_simulation(float *listener_position, string mesh) {
           direction[1] = new_direction[1];
           direction[2] = new_direction[2];
 
+          position[0] = intersection[0];
+          position[1] = intersection[1];
+          position[2] = intersection[2];
+
           bounces++;
         }
       }
@@ -227,7 +234,7 @@ void run_simulation(float *listener_position, string mesh) {
 int main(int argc, char* argv[]) {
   string mesh = argv[1];
 
-  srand(time(0));
+  srand(time(NULL));
 
   float startingPosition[3] = {
     0.0f,

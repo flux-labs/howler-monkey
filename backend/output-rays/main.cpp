@@ -22,7 +22,12 @@ void print_vector3 (float * vector, string name) {
   printf("\n");
 }
 
-#define NUMBER_OF_RAYS 10
+typedef struct {
+    float dist;
+    int reflections;
+} Intersection;
+
+#define NUMBER_OF_RAYS 100
 #define MAXIMUM_REFLECTIONS 10
 
 #define crossProduct(a,b,c) \
@@ -44,6 +49,13 @@ void print_vector3 (float * vector, string name) {
   (p1)[0] = p0[0] + d*v[0]; \
   (p1)[1] = p0[1] + d*v[1]; \
   (p1)[2] = p0[2] + d*v[2];
+
+float get_distance(float *p0, float *p1) {
+  float xd = p1[0] - p0[0];
+  float yd = p1[1] - p0[1];
+  float zd = p1[2] - p0[2];
+  return sqrt(xd*xd + yd*yd + zd*zd);
+}
 
 void reflect_ray(float *direction, float *normal, float *new_direction) {
   float direction_dot_normal = innerProduct(normal, direction);
@@ -154,7 +166,7 @@ Json::Value parse_mesh(string mesh) {
   Json::Reader reader;
   bool parsedSuccess = reader.parse(mesh, root, false);
 
-  if(not parsedSuccess) {
+  if (not parsedSuccess) {
     cout<<"Failed to parse JSON"<<endl
       <<reader.getFormatedErrorMessages()
       <<endl;
@@ -163,10 +175,12 @@ Json::Value parse_mesh(string mesh) {
   return root;
 }
 
-void run_simulation(float *listener_position, string mesh) {
+vector<Intersection> run_simulation(float *listener_position, string mesh) {
   Json::Value parsed_mesh = parse_mesh(mesh);
   const Json::Value vertices = parsed_mesh["vertices"];
   const Json::Value faces = parsed_mesh["faces"];
+
+  vector<Intersection> intersections;
 
   float ctr[3] = {0.75, 0.75, 0.75};
   float r = 0.1f;
@@ -185,15 +199,17 @@ void run_simulation(float *listener_position, string mesh) {
 
   for (int k = 0; k < NUMBER_OF_RAYS; k++) {
     int bounces = 0;
-    printf("running ray number: %i\n", k);
+    position[0] = listener_position[0];
+    position[1] = listener_position[1];
+    position[2] = listener_position[2];
+
     direction[0] = (static_cast<float>(rand())/static_cast<float>(RAND_MAX)) * 2.0f - 1.0f;
     direction[1] = (static_cast<float>(rand())/static_cast<float>(RAND_MAX)) * 2.0f - 1.0f;
     direction[2] = (static_cast<float>(rand())/static_cast<float>(RAND_MAX)) * 2.0f - 1.0f;
 
+    float distance = 0.0f;
+
     while (bounces < MAXIMUM_REFLECTIONS) {
-
-      printf("lol %i\n", bounces);
-
       for (unsigned int i=0; i < faces.size(); i++) {
         Json::Value face = faces[i];
 
@@ -218,19 +234,21 @@ void run_simulation(float *listener_position, string mesh) {
         float intersection[3] = {0, 0, 0};
         float sphere_intersection[3] = {0, 0, 0};
 
-        // int intersects_sphere = rayIntersectSphere(position, direction, ctr, r, sphere_intersection);
+        int intersects_sphere = rayIntersectSphere(position, direction, ctr, r, sphere_intersection);
 
-        // if (intersects_sphere) {
-        //   cout << "intersected sphere!" << endl;
-        //   bounces = MAXIMUM_REFLECTIONS + 1;
-        //   break;
-        // }
+        if (intersects_sphere) {
+          distance += get_distance(position, sphere_intersection);
+          Intersection intersection = {distance, bounces};
+          intersections.push_back(intersection);
+          bounces = MAXIMUM_REFLECTIONS + 1;
+          break;
+        }
 
         int intersects = rayIntersectsTriangle(position, direction, v0, v1, v2, intersection);
 
         //reflect if intersection
         if (intersects) {
-          cout << "intersects with face " << i << endl;
+          distance += get_distance(position, intersection);
           float new_direction[3] = {0, 0, 0};
 
           //figuring out normal
@@ -261,7 +279,7 @@ void run_simulation(float *listener_position, string mesh) {
 
 
   }
-
+  return intersections;
 }
 
 int main(int argc, char* argv[]) {
@@ -275,7 +293,13 @@ int main(int argc, char* argv[]) {
     0.0f
   };
 
-  run_simulation(startingPosition, mesh);
+  vector<Intersection> intersections = run_simulation(startingPosition, mesh);
+
+  for (auto i = intersections.begin(); i != intersections.end(); ++i) {
+    printf("intersection: ");
+    printf("bounces: %i, ", i->reflections);
+    printf("distance: %lf, ", i->dist);
+  }
 
   stringstream ss (stringstream::in | stringstream::out);
 

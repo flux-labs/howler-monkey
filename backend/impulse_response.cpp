@@ -1,12 +1,22 @@
 #include "../dist/include/aquila/aquila.h"
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
+#include <vector>
+#include <algorithm>
+#include <functional>
 #define SAMPLES_PER_SECOND 44100
+#define SPEED_OF_SOUND 340.29
 
 const int SECONDS_OF_IR = 6;
 const size_t SIZE = SAMPLES_PER_SECOND * SECONDS_OF_IR;
 const int MAX = 1020;
 const int HALF_MAX = MAX / 2;
+
+typedef struct Interaction {
+    float dist;
+    int reflections;
+} interaction;
 
 const double * create_impulse()
 {
@@ -27,47 +37,57 @@ const double * create_impulse()
     return generator.toArray();
 }
 
-void apply_echo(double * res, const double * impulse, size_t i, int delay_samples, double delay_factor) {
-    int delay = delay_samples;
-    double this_delay_factor = delay_factor;
-    while ((int)(i - delay) > 0) {;
-        double moment = (impulse[i - delay] / 2 + res[i - delay] / 2) / this_delay_factor;
-        res[i] += moment;
-        int inner = -500;
-        while (inner++ < 500) {
-            int r = rand() % 100;
-            double factor = (double)(inner == 0 ? 1 : inner);
-            factor = factor < 0 ? -factor : factor;
-            if (r > 66 && i + inner < SIZE) {
-                res[i + inner] += moment / factor;
-            }
-            else if (r < 33 && i - inner > 0) {
-                res[i - inner] += moment / factor;
-            }
-        }
-        delay += delay_samples;
-        this_delay_factor += delay_factor;
+void apply_reverb(double * res, const Aquila::SpectrumType & impulseSpectrum, std::vector<interaction>::iterator it, std::shared_ptr<Aquila::Fft> fft)
+{
+    int travel_time_in_samples = (int)((float)(it->dist / SPEED_OF_SOUND) * SAMPLES_PER_SECOND);
+    if (travel_time_in_samples > SIZE) {
+        return;
+    }
+
+    Aquila::SpectrumType filterSpectrum(SIZE);
+
+    for (std::size_t i = 0; i < SIZE; i++) {
+        float l = log(i + (SIZE / 10) * it->reflections);
+        filterSpectrum[i] = l < 0 ? 0 : l;
+    }
+
+    Aquila::SpectrumType resultSpectrum(SIZE);
+
+    std::transform(
+        std::begin(impulseSpectrum),
+        std::end(impulseSpectrum),
+        std::begin(filterSpectrum),
+        std::begin(resultSpectrum),
+        [] (Aquila::ComplexType x, Aquila::ComplexType y) { return x * y }
+    );
+
+    double x1[SIZE];
+    fft->ifft(resultSpectrum, x1);
+
+    for (int i = 0; i + travel_time_in_samples < SIZE; i++) {
+        res[i + travel_time_in_samples] += x1[i];
     }
 }
 
 
-int main(int argc, char * argv[])
+int create_impulse(std::vector<interaction> interactions, char fileName[])
 {
+
     const double * impulse = create_impulse();
     double res[SIZE] = {0};
 
-    srand(time(NULL));
+    auto fft = Aquila::FftFactory::getFft(SIZE);
+    Aquila::SpectrumType impulseSpectrum = fft->fft(impulse);
 
-    for (int i = 0; i < SIZE; i++) {
-        res[i] += impulse[i];
-        apply_echo(res, impulse, i, SAMPLES_PER_SECOND, 100);
+    for (std::vector<interaction>::iterator i = interactions.begin(); i != interactions.end(); i++) {
+        apply_reverb(res, impulseSpectrum, i, fft);
     }
 
-    Aquila::SignalSource withEchos(res, SIZE, SAMPLES_PER_SECOND);
+    Aquila::SignalSource with_reverb(res, SIZE, SAMPLES_PER_SECOND);
 
-    Aquila::WaveFileHandler wav(argv[1]);
+    Aquila::WaveFileHandler wav(fileName);
 
-    wav.save(withEchos);
+    wav.save(with_reverb);
 
     return 0;
 }

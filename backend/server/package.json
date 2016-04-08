@@ -9,7 +9,7 @@
     "start": "npm run linkNM && node index.js",
     "build": "npm run linkNM && babel ./src --out-dir ./public/scripts",
     "dev": "npm run linkNM && babel ./src --watch --out-dir ./public/scripts & nodemon -e js ./index.js",
-    "linkNM": "ln -s node_modules ./public/scripts"
+    "linkNM": "ln -sf node_modules ./public/scripts"
   },
   "author": "",
   "license": "ISC",

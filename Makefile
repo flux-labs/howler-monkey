@@ -11,8 +11,6 @@ PROD_COMPILE=$(CC) $(CLFAGS) -O3 $(LIBRARIES)
 	mkdir -p ./dist ./backend/build/aquila;
 	(cd ./backend/build/aquila && cmake ../../aquila -DCMAKE_INSTALL_PREFIX="$(REPO)/dist/" && make && make install);
 
-aquila_test: ./dist/hello_aquila
-
 ./dist/impulse_response: ./dist/lib/libAquila.a
 	$(STD_COMPILE) ./backend/impulse_response.cpp -o ./dist/impulse_respose
 
@@ -29,9 +27,15 @@ jsoncpp:
 
 test_jsoncpp: ./dist/hello_jsoncpp
 
-all: ./dist/lib/libAquila.a
+all: ./dist/lib/libAquila.a ./dist/impulse_response
 
 test_impulse: impulse
 	./dist/impulse_respose hello.wav;
 	afplay hello.wav;
+
+server:
+	(cd ./backend/server && npm i)
+
+start: all server
+	(cd ./backend/server && npm start)
 

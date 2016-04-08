@@ -56,10 +56,6 @@ int main(int argc, char * argv[])
     const double * impulse = create_impulse();
     double res[SIZE] = {0};
 
-    std::shared_ptr<Aquila::Fft> fft = Aquila::FftFactory::getFft(SIZE);
-
-    Aquila::SpectrumType spectrum = fft->fft(impulse);
-
     srand(time(NULL));
 
     for (int i = 0; i < SIZE; i++) {

@@ -16,13 +16,13 @@ void print_vector3 (float * vector, string name) {
   <<endl;
 
   for (int i = 0; i < 3; i++) {
-      printf("%lf\n", vector[i]);
+      printf("%lf   ,", vector[i]);
   }
 
   printf("\n");
 }
 
-#define NUMBER_OF_RAYS 100
+#define NUMBER_OF_RAYS 10
 #define MAXIMUM_REFLECTIONS 10
 
 #define crossProduct(a,b,c) \
@@ -105,32 +105,31 @@ int rayIntersectsTriangle(float *p, float *d, float *v0, float *v1, float *v2, f
  * @param  radius radius of the sphere
  * @return        point of intersection, or zero
  */
-float * rayIntersectSphere(float *origin, float *dir, float *center, float radius) {
+int rayIntersectSphere(float *origin, float *dir, float *center, float radius, float *intersection) {
 
   float l[3];
-  static float r[3];
 
   vector(l, center, origin);
 
   float tca = innerProduct(l, dir);
 
   // no intersection
-  if (tca < 0) return 0;
+  if (tca < 0) return false;
 
   float d2 = innerProduct(l, l) - tca * tca;
 
   float d = sqrt(d2);
 
   // no intersection
-  if (d > radius) return 0;
+  if (d > radius) return false;
 
   float thc = sqrt(radius*radius - d2);
 
   float t0 = tca - thc;
 
-  translate(r,origin,dir,t0);
+  translate(intersection,origin,dir,t0);
 
-  return r;
+  return true;
 
 }
 
@@ -186,13 +185,14 @@ void run_simulation(float *listener_position, string mesh) {
 
   for (int k = 0; k < NUMBER_OF_RAYS; k++) {
     int bounces = 0;
-    int seeking_sphere = false;
     printf("running ray number: %i\n", k);
     direction[0] = (static_cast<float>(rand())/static_cast<float>(RAND_MAX)) * 2.0f - 1.0f;
     direction[1] = (static_cast<float>(rand())/static_cast<float>(RAND_MAX)) * 2.0f - 1.0f;
     direction[2] = (static_cast<float>(rand())/static_cast<float>(RAND_MAX)) * 2.0f - 1.0f;
 
-    while (bounces < MAXIMUM_REFLECTIONS && not seeking_sphere) {
+    while (bounces < MAXIMUM_REFLECTIONS) {
+
+      printf("lol %i\n", bounces);
 
       for (unsigned int i=0; i < faces.size(); i++) {
         Json::Value face = faces[i];
@@ -216,22 +216,21 @@ void run_simulation(float *listener_position, string mesh) {
         };
 
         float intersection[3] = {0, 0, 0};
+        float sphere_intersection[3] = {0, 0, 0};
 
-        float *intersects_sphere = rayIntersectSphere(position, direction, ctr, r);
+        // int intersects_sphere = rayIntersectSphere(position, direction, ctr, r, sphere_intersection);
 
-        if (intersects_sphere) {
-          cout << "intersected sphere!" << endl;
-          seeking_sphere = true;
-          break;
-        }
-
-        print_vector3(direction, "old_direction");
-        print_vector3(position, "old_position");
+        // if (intersects_sphere) {
+        //   cout << "intersected sphere!" << endl;
+        //   bounces = MAXIMUM_REFLECTIONS + 1;
+        //   break;
+        // }
 
         int intersects = rayIntersectsTriangle(position, direction, v0, v1, v2, intersection);
 
         //reflect if intersection
         if (intersects) {
+          cout << "intersects with face " << i << endl;
           float new_direction[3] = {0, 0, 0};
 
           //figuring out normal
@@ -253,13 +252,7 @@ void run_simulation(float *listener_position, string mesh) {
           position[1] = intersection[1];
           position[2] = intersection[2];
 
-          print_vector3(direction, "new_direction");
-          print_vector3(position, "new_position");
-
           bounces++;
-        } else {
-          cout << "lost ray!" << endl;
-          seeking_sphere = true;
           break;
         }
       }
@@ -290,13 +283,14 @@ int main(int argc, char* argv[]) {
   float dir[3] = {0,0,-1};
   float p0[3] = {2,2,8};
   float r = 4.0f;
-  float *intersects = rayIntersectSphere(p0, dir, ctr, r);
+  float sphere_intersection[3] = {0.0f, 0.0f, 0.0f};
+  int intersects = rayIntersectSphere(p0, dir, ctr, r, sphere_intersection);
 
   string intersectStr;
 
   if (intersects) {
     for(unsigned int i=0; i<3; i++) {
-      ss << intersects[i];
+      ss << sphere_intersection[i];
       ss << " ";
     }
     intersectStr = ss.str();
@@ -306,7 +300,7 @@ int main(int argc, char* argv[]) {
 
   float normal[3] = {0,0,1};
 
-  bool whichSide = pointAbovePlane(ctr, normal, intersects);
+  bool whichSide = pointAbovePlane(ctr, normal, sphere_intersection);
 
   cout << "ray intersection with sphere "
   << intersectStr

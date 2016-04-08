@@ -17,13 +17,18 @@ void print_vector3 (float * vector, string name) {
   <<endl;
 
   for (int i = 0; i < 3; i++) {
-      printf("%lf\n", vector[i]);
+      printf("%lf   ,", vector[i]);
   }
 
   printf("\n");
 }
 
-#define NUMBER_OF_RAYS 1
+typedef struct {
+    float dist;
+    int reflections;
+} Intersection;
+
+#define NUMBER_OF_RAYS 100
 #define MAXIMUM_REFLECTIONS 10
 
 #define crossProduct(a,b,c) \
@@ -45,6 +50,13 @@ void print_vector3 (float * vector, string name) {
   (p1)[0] = p0[0] + d*v[0]; \
   (p1)[1] = p0[1] + d*v[1]; \
   (p1)[2] = p0[2] + d*v[2];
+
+float get_distance(float *p0, float *p1) {
+  float xd = p1[0] - p0[0];
+  float yd = p1[1] - p0[1];
+  float zd = p1[2] - p0[2];
+  return sqrt(xd*xd + yd*yd + zd*zd);
+}
 
 void reflect_ray(float *direction, float *normal, float *new_direction) {
   float direction_dot_normal = innerProduct(normal, direction);
@@ -106,32 +118,31 @@ int rayIntersectsTriangle(float *p, float *d, float *v0, float *v1, float *v2, f
  * @param  radius radius of the sphere
  * @return        point of intersection, or zero
  */
-float * rayIntersectSphere(float *origin, float *dir, float *center, float radius) {
+int rayIntersectSphere(float *origin, float *dir, float *center, float radius, float *intersection) {
 
   float l[3];
-  static float r[3];
 
   vector(l, center, origin);
 
   float tca = innerProduct(l, dir);
 
   // no intersection
-  if (tca < 0) return 0;
+  if (tca < 0) return false;
 
   float d2 = innerProduct(l, l) - tca * tca;
 
   float d = sqrt(d2);
 
   // no intersection
-  if (d > radius) return 0;
+  if (d > radius) return false;
 
   float thc = sqrt(radius*radius - d2);
 
   float t0 = tca - thc;
 
-  translate(r,origin,dir,t0);
+  translate(intersection,origin,dir,t0);
 
-  return r;
+  return true;
 
 }
 
@@ -156,7 +167,7 @@ Json::Value parse_mesh(string mesh) {
   Json::Reader reader;
   bool parsedSuccess = reader.parse(mesh, root, false);
 
-  if(not parsedSuccess) {
+  if (not parsedSuccess) {
     cout<<"Failed to parse JSON"<<endl
       <<reader.getFormatedErrorMessages()
       <<endl;
@@ -165,10 +176,15 @@ Json::Value parse_mesh(string mesh) {
   return root;
 }
 
-void run_simulation(float *listener_position, string mesh) {
+vector<Intersection> run_simulation(float *listener_position, string mesh) {
   Json::Value parsed_mesh = parse_mesh(mesh);
   const Json::Value vertices = parsed_mesh["vertices"];
   const Json::Value faces = parsed_mesh["faces"];
+
+  vector<Intersection> intersections;
+
+  float ctr[3] = {0.75, 0.75, 0.75};
+  float r = 0.1f;
 
   float position[3] = {
     listener_position[0],
@@ -184,13 +200,17 @@ void run_simulation(float *listener_position, string mesh) {
 
   for (int k = 0; k < NUMBER_OF_RAYS; k++) {
     int bounces = 0;
+    position[0] = listener_position[0];
+    position[1] = listener_position[1];
+    position[2] = listener_position[2];
 
     direction[0] = (static_cast<float>(rand())/static_cast<float>(RAND_MAX)) * 2.0f - 1.0f;
     direction[1] = (static_cast<float>(rand())/static_cast<float>(RAND_MAX)) * 2.0f - 1.0f;
     direction[2] = (static_cast<float>(rand())/static_cast<float>(RAND_MAX)) * 2.0f - 1.0f;
 
-    while (bounces < MAXIMUM_REFLECTIONS) {
+    float distance = 0.0f;
 
+    while (bounces < MAXIMUM_REFLECTIONS) {
       for (unsigned int i=0; i < faces.size(); i++) {
         Json::Value face = faces[i];
 
@@ -213,14 +233,23 @@ void run_simulation(float *listener_position, string mesh) {
         };
 
         float intersection[3] = {0, 0, 0};
+        float sphere_intersection[3] = {0, 0, 0};
+
+        int intersects_sphere = rayIntersectSphere(position, direction, ctr, r, sphere_intersection);
+
+        if (intersects_sphere) {
+          distance += get_distance(position, sphere_intersection);
+          Intersection intersection = {distance, bounces};
+          intersections.push_back(intersection);
+          bounces = MAXIMUM_REFLECTIONS + 1;
+          break;
+        }
 
         int intersects = rayIntersectsTriangle(position, direction, v0, v1, v2, intersection);
 
         //reflect if intersection
         if (intersects) {
-          cout << "Intersects with face " << i
-          << endl;
-
+          distance += get_distance(position, intersection);
           float new_direction[3] = {0, 0, 0};
 
           //figuring out normal
@@ -243,6 +272,7 @@ void run_simulation(float *listener_position, string mesh) {
           position[2] = intersection[2];
 
           bounces++;
+          break;
         }
       }
 
@@ -250,7 +280,7 @@ void run_simulation(float *listener_position, string mesh) {
 
 
   }
-
+  return intersections;
 }
 
 int main(int argc, char* argv[]) {
@@ -291,7 +321,13 @@ int main(int argc, char* argv[]) {
     0.0f
   };
 
-  run_simulation(startingPosition, mesh);
+  vector<Intersection> intersections = run_simulation(startingPosition, mesh);
+
+  for (auto i = intersections.begin(); i != intersections.end(); ++i) {
+    printf("intersection: ");
+    printf("bounces: %i, ", i->reflections);
+    printf("distance: %lf, ", i->dist);
+  }
 
   stringstream ss (stringstream::in | stringstream::out);
 
@@ -299,13 +335,14 @@ int main(int argc, char* argv[]) {
   float dir[3] = {0,0,-1};
   float p0[3] = {2,2,8};
   float r = 4.0f;
-  float *intersects = rayIntersectSphere(p0, dir, ctr, r);
+  float sphere_intersection[3] = {0.0f, 0.0f, 0.0f};
+  int intersects = rayIntersectSphere(p0, dir, ctr, r, sphere_intersection);
 
   string intersectStr;
 
   if (intersects) {
     for(unsigned int i=0; i<3; i++) {
-      ss << intersects[i];
+      ss << sphere_intersection[i];
       ss << " ";
     }
     intersectStr = ss.str();
@@ -315,7 +352,7 @@ int main(int argc, char* argv[]) {
 
   float normal[3] = {0,0,1};
 
-  bool whichSide = pointAbovePlane(ctr, normal, intersects);
+  bool whichSide = pointAbovePlane(ctr, normal, sphere_intersection);
 
   cout << "ray intersection with sphere "
   << intersectStr

@@ -1,10 +1,10 @@
 #include <iostream>
 #include <string>
 #include "../../dist/include/jsoncpp/json.h"
-#include <ctime>
-#include <cmath>
-#include <cstdlib>
+
+#include <time.h>
 #include <math.h>
+#include <stdlib.h>
 
 //JUST FOR DEBUGGING TAKE ME OUT PLEASE
 #include <stdio.h>
@@ -97,7 +97,14 @@ int rayIntersectsTriangle(float *p, float *d, float *v0, float *v1, float *v2, f
 }
 
 
-
+/**
+ * Intersects a ray with a sphere.
+ * @param  origin origin of the ray
+ * @param  dir    direction of the ray
+ * @param  center center of the sphere
+ * @param  radius radius of the sphere
+ * @return        point of intersection, or zero
+ */
 float * rayIntersectSphere(float *origin, float *dir, float *center, float radius) {
 
   float l[3];
@@ -125,6 +132,20 @@ float * rayIntersectSphere(float *origin, float *dir, float *center, float radiu
 
   return r;
 
+}
+
+/**
+ * Checks which side of a plane a point is on
+ * @param  origin origin of the plane
+ * @param  normal normal of the plane
+ * @param  point  the point
+ * @return
+ */
+bool pointAbovePlane(float *origin, float *normal, float *point) {
+  float l[3];
+  vector(l, point, origin);
+  float dot = innerProduct(l, normal);
+  return dot > 0;
 }
 
 //parsing mesh
@@ -234,7 +255,7 @@ void run_simulation(float *listener_position, string mesh) {
 int main(int argc, char* argv[]) {
   string mesh = argv[1];
 
-  srand(time(NULL));
+  srand((unsigned)time(NULL));
 
   float startingPosition[3] = {
     0.0f,
@@ -247,8 +268,8 @@ int main(int argc, char* argv[]) {
   stringstream ss (stringstream::in | stringstream::out);
 
   float ctr[3] = {1,1,1};
-  float dir[3] = {0,0,1};
-  float p0[3] = {2,2,-8};
+  float dir[3] = {0,0,-1};
+  float p0[3] = {2,2,8};
   float r = 4.0f;
   float *intersects = rayIntersectSphere(p0, dir, ctr, r);
 
@@ -264,7 +285,14 @@ int main(int argc, char* argv[]) {
     intersectStr = "None";
   }
 
-  cout << "ray intersection with sphere " << intersectStr << "."
+  float normal[3] = {0,0,1};
+
+  bool whichSide = pointAbovePlane(ctr, normal, intersects);
+
+  cout << "ray intersection with sphere "
+  << intersectStr
+  << "on the top? "
+  << whichSide
   << endl;
 
   return 0;

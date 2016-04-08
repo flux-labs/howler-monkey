@@ -3,4 +3,4 @@
 	url = git://github.com/zsiciarz/aquila.git
 [submodule "backend/jsoncpp"]
 	path = backend/jsoncpp
-	url = git@github.com:open-source-parsers/jsoncpp.git
+	url = https://github.com/open-source-parsers/jsoncpp.git

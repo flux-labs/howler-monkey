@@ -15,6 +15,8 @@ PROD_COMPILE=$(CC) $(CLFAGS) -O3 $(LIBRARIES)
 ./dist/impulse_response: ./dist/lib/libAquila.a
 	$(STD_COMPILE) ./backend/impulse_response.cpp -o ./dist/impulse_respose
 
+aquila: ./dist/lib/libAquila.a
+
 impulse: ./dist/impulse_response
 
 ./dist/hello_aquila: ./dist/lib/libAquila.a

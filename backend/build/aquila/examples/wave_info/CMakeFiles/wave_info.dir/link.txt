@@ -1,1 +1,0 @@
-/usr/bin/c++    -std=c++11 -stdlib=libc++ -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names   CMakeFiles/wave_info.dir/wave_info.cpp.o  -o wave_info  ../../libAquila.a ../../lib/libOoura_fft.a 

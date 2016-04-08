@@ -10,7 +10,7 @@
 #define SPEED_OF_SOUND 340.29
 
 const int SECONDS_OF_IR = 6;
-const size_t SIZE = 16777216;
+const size_t SIZE = 262144;
 const int MAX = 1020;
 const int HALF_MAX = MAX / 2;
 

@@ -47,23 +47,30 @@ function main() {
     });
 
     var res = JSON.stringify({
-      obj: obj,
+      obj: JSON.parse(obj.replace(/(\r\n|\n|\r|\t)/gm,"")),
       points: inputState
     });
+
+    console.log(res);
 
     var request = new XMLHttpRequest();
     request.open('POST', '/make-impulse/', true);
     request.setRequestHeader("Content-type", "application/json");
+    request.onload = function() {
+      handleResponse(this.responseText);
+    }
     request.send(res);
   });
 
 
   function handleResponse(wavUrl) {
 
-    navigator.webkitGetUserMedia({audio: true}, function(stream) {
+    navigator.mediaDevices.getUserMedia({audio: true}).then(function(stream) {
       var request = new XMLHttpRequest();
       request.open('GET', wavUrl, true);
       request.responseType = 'arraybuffer';
+
+      console.log('we made it here');
 
       var convolver = context.createConvolver();
 
@@ -72,10 +79,17 @@ function main() {
         context.decodeAudioData(audioData, function(buffer) {
           convolver.buffer = buffer;
           var input = context.createMediaStreamSource(stream);
+          var gain = context.createGain();
           input.connect(convolver);
-          convolver.connect(context.destination);
+          gain.gain.value = 0.7;
+          convolver.connect(gain);
+          gain.connect(context.destination);
         })
       }
+
+      request.send();
+    }).catch(function(err) {
+      console.log(err);
     });
 
   }

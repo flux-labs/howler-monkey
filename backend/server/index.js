@@ -8,6 +8,7 @@ const rx = Path.join(nodeMods, 'rx/dist/rx.all.min.js');
 const system = Path.join(nodeMods, 'systemjs/dist/system.js');
 const pub = Path.join(__dirname, 'public');
 const index = Path.join(pub, 'index.html');
+const wav = Path.join(__dirname, 'lol.wav');
 const exec = require('child_process').exec;
 var fs = require('fs');
 
@@ -79,21 +80,28 @@ server.route({
   method: 'POST',
   path: '/make-impulse/',
   handler: function(request, response) {
-    fs.writeFile("dump.json", request.payload, function(err) {
+    fs.writeFile("dump.json", JSON.stringify(request.payload), function(err) {
       if(err) {
           return console.log(err);
       }
 
       console.log("The file was saved!");
     });
-    exec('../../dist/output-rays ../../tests/testfile.json lol.wav', (err, stdout, stderr) => {
+    exec('../../dist/output-rays dump.json lol.wav', (err, stdout, stderr) => {
       if (err) {
         console.error(err);
         return;
       }
-      console.log(stderr);
-      console.log(stdout);
+      response('lol.wav');
     });
+  }
+});
+
+server.route({
+  method: 'GET',
+  path: '/lol.wav',
+  handler: {
+    file: wav
   }
 });
 

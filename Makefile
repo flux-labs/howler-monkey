@@ -23,14 +23,18 @@ impulse: ./dist/impulse_response
 	$(STD_COMPILE) ./backend/hello_aquila.cpp -o ./dist/hello_aquila
 
 ./dist/hello_jsoncpp: jsoncpp
+
+./dist/output-rays:
 	$(STD_COMPILE) ./backend/output-rays/main.cpp -o ./dist/output-rays
 
 jsoncpp:
 	python ./backend/jsoncpp/amalgamate.py -s ./backend/build/jsoncpp/jsoncpp.cpp -t ./backend/jsoncpp
+	mkdir -p ./dist/include/jsoncpp/
+	cp ./backend/build/jsoncpp/json/* ./dist/include/jsoncpp/
 
 test_jsoncpp: ./dist/hello_jsoncpp
 
-all: ./dist/lib/libAquila.a ./dist/impulse_response
+all: jsoncpp ./dist/lib/libAquila.a ./dist/output-rays
 
 test_impulse: impulse
 	./dist/impulse_respose hello.wav;
@@ -42,3 +46,5 @@ server:
 start: all server
 	(cd ./backend/server && npm start)
 
+clean:
+	rm -rf ./backend/build ./dist

@@ -8,6 +8,8 @@ const rx = Path.join(nodeMods, 'rx/dist/rx.all.min.js');
 const system = Path.join(nodeMods, 'systemjs/dist/system.js');
 const pub = Path.join(__dirname, 'public');
 const index = Path.join(pub, 'index.html');
+const exec = require('child_process').exec;
+var fs = require('fs');
 
 const server = new Hapi.Server({
   connections: {
@@ -77,7 +79,21 @@ server.route({
   method: 'POST',
   path: '/make-impulse/',
   handler: function(request, response) {
-    console.log(request.payload);
+    fs.writeFile("dump.json", request.payload, function(err) {
+      if(err) {
+          return console.log(err);
+      }
+
+      console.log("The file was saved!");
+    });
+    exec('../../dist/output-rays ../../tests/testfile.json lol.wav', (err, stdout, stderr) => {
+      if (err) {
+        console.error(err);
+        return;
+      }
+      console.log(stderr);
+      console.log(stdout);
+    });
   }
 });
 

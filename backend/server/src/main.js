@@ -49,7 +49,10 @@ function main() {
       points: inputState
     });
 
-    console.log(res);
+    var request = new XMLHttpRequest();
+    request.open('POST', '/make-impulse/', true);
+    request.setRequestHeader("Content-type", "application/json");
+    request.send(res);
   });
 }
 

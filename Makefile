@@ -2,7 +2,8 @@ REPO=$(shell pwd)
 AQUILA_LIB=$(REPO)/dist/lib/libAquila.a
 JSONCPP=./backend/build/jsoncpp/jsoncpp.cpp
 CC=clang++
-LIBRARIES=$(AQUILA_LIB) $(JSONCPP)
+OOURA=$(REPO)/dist/lib/libOoura_fft.a
+LIBRARIES=$(OOURA) $(AQUILA_LIB) $(JSONCPP)
 CFLAGS=-Wall -Wextra -std=c++11 -g
 STD_COMPILE=$(CC) $(CFLAGS) $(LIBRARIES)
 PROD_COMPILE=$(CC) $(CLFAGS) -O3 $(LIBRARIES)

@@ -2,7 +2,7 @@
 #include <fstream>
 #include <string>
 #include "../../dist/include/jsoncpp/json.h"
-#include "../howler-monkey.h"
+#include "../impulse_response.cpp"
 
 #include <time.h>
 #include <math.h>

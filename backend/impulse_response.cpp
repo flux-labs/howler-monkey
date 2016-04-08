@@ -1,5 +1,4 @@
 #include "../dist/include/aquila/aquila.h"
-#include "howler-monkey.h"
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
@@ -15,7 +14,12 @@ const size_t SIZE = SAMPLES_PER_SECOND * SECONDS_OF_IR;
 const int MAX = 1020;
 const int HALF_MAX = MAX / 2;
 
-const double * create_impulse()
+typedef struct Interaction_ {
+    int reflections;
+    float dist;
+} interaction;
+
+const double * generate_impulse()
 {
     double envelope[SIZE] = {0};
 
@@ -72,13 +76,14 @@ void apply_reverb(
 }
 
 
-void create_impulse(const std::vector<interaction> interactions, std::string fileName)
+void create_impulse(std::vector<interaction> interactions, std::string fileName)
 {
 
-    const double * impulse = create_impulse();
+    const double * impulse = generate_impulse();
     double res[SIZE] = {0};
 
     auto fft = Aquila::FftFactory::getFft(SIZE);
+    printf("%lf\n", impulse[0]);
     Aquila::SpectrumType impulseSpectrum = fft->fft(impulse);
 
     for (std::vector<interaction>::const_iterator i = interactions.begin(); i != interactions.end(); ++i) {
@@ -91,4 +96,3 @@ void create_impulse(const std::vector<interaction> interactions, std::string fil
 
     wav.save(with_reverb);
 }
-
